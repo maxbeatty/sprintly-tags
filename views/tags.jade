@@ -1,0 +1,17 @@
+extends layout
+
+block content
+  h3 #{total} Total Tags Found
+
+  .row
+    for product, id in products
+      .span2
+        h4
+          a(href="https://sprint.ly/product/" + id, target="_blank")= product.name
+
+        ul.unstyled
+          each tag in product.tags
+            li
+              span.label= tag[1]
+              |&nbsp;
+              a(href="https://sprint.ly/product/"+id+"/#!/dashboard/#tags="+tag[0])= tag[0]

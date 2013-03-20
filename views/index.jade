@@ -1,0 +1,26 @@
+extends layout
+
+block content
+  .row
+    .span3
+      form(action="/tags", method="POST").well
+        label Your account's email address
+        input(name="email", type="email", placeholder="joe@sprint.ly")
+
+        label Your API key
+        input(name="api_key", type="text", placeholder="s0m3th1ngCrAzY")
+
+        br
+        button.btn.btn-primary(type="submit") Get tags
+
+    .span5
+      h5 How do you find your API key?
+
+      blockquote 
+        p You can find your API key on 
+          a(href="https://sprint.ly/account/profile", target="_blank") your account profile
+          |. We do not currently have an OAuth API so be sure to keep these credentials in a safe place and only share them with trusted third parties.
+        small
+          a(href="https://sprintly.uservoice.com/knowledgebase/articles/98353-authentication") Sprint.ly's documentation 
+
+      img(src="https://i.embed.ly/1/image?url=https%3A%2F%2Fskitch-img.s3.amazonaws.com%2F20120726-tk53wrybew8secqryyn4t9e9me.jpg&key=afea23f29e5a4f63bd166897e3dc72df")
