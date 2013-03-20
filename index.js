@@ -80,5 +80,7 @@ app.post('/tags', function(req, res) {
   );
 });
 
-app.listen(3000);
-console.log("Started server...");
+var port = process.env.PORT || 3000;
+app.listen(port, function() {
+  console.log("Listening on " + port);
+});
