@@ -1,8 +1,7 @@
 var express = require('express'),
-    request = require('request'),
     Step = require('step'),
-    app = express(),
-    slyAPI = 'https://sprint.ly/api/';
+    Sly = require('./sprintly'),
+    app = express();
 
 app.configure(function() {
   app.set('views', __dirname + '/views');
@@ -15,72 +14,71 @@ app.get('/', function(req, res) {
 });
 
 app.post('/tags', function(req, res) {
-  var slyAuth = {
-          user: req.body.email,
-          pass: req.body.api_key
-        },
+  var slyApi = new Sly(req.body.email, req.body.api_key),
       products = {},
+      uniqTags = {},
       totalTags = 0;
 
   Step(
-    function getProducts() {
-      request({
-        uri: slyAPI + 'products.json',
-        auth: slyAuth,
-        json: true
-      }, this);
+    function () {
+      slyApi.getProducts(this);
     },
-    function getItemsFromProducts(err, response, body) {
-      if (err) res.send(500, err);
+    function (err, prods) {
+      if (err) return res.send(500, err);
 
       var group = this.group();
-      body.forEach(function(product) {
-        if (product.archived === false) {
-          products[product.id] = { name: product.name, tags: {} };
-          request({
-            uri: slyAPI + '/products/' + product.id + '/items.json',
-            auth: slyAuth
-          }, group());
+      prods.forEach(function(product) {
+        if (!product.archived) {
+          products[product.id] = {
+            name: product.name,
+            tags: {},
+            itemCount: 0,
+            statuses: {},
+            types: {}
+          };
+          slyApi.getItemsForProduct(product.id, group());
         }
       });
     },
-    function sendItems(err, itemResponses) {
-      if (err) res.send(500, err);
+    function (err, itemsByProduct) {
+      if (err) return res.send(500, err);
 
-      itemResponses.forEach(function(resp) {
-        var items = JSON.parse(resp.body);
-
+      itemsByProduct.forEach(function(items) {
         items.forEach(function (item) {
+          var p = products[item.product.id];
+
+          p.itemCount++;
+
+          if (!p.statuses[item.status]) p.statuses[item.status] = {};
+          p.statuses[item.status][item.type] = p.statuses[item.status][item.type] ? ++p.statuses[item.status][item.type] : 1;
+
           item.tags.forEach(function(tag) {
             totalTags++;
-
-            if (products[item.product.id].tags.hasOwnProperty(tag)) {
-              products[item.product.id].tags[tag]++;
-            } else {
-              products[item.product.id].tags[tag] = 1;
-            }
+            uniqTags[tag] = 1;
+            p.tags[tag] = p.tags[tag] ? ++p.tags[tag] : 1;
           });
         });
       });
+
+      // Sort tags by most commonly occurring
+      var srt = function(a, b) { return b[1] - a[1];};
 
       for (var p in products) {
         var sortable = [];
         for (var t in products[p].tags)
           sortable.push([t, products[p].tags[t]]);
 
-        sortable.sort(function(a, b) { return b[1] - a[1]});
+        sortable.sort(srt);
         products[p].tags = sortable;
       }
 
-      res.render("tags", { 
+      res.render("tags", {
         products : products,
+        unique: Object.keys(uniqTags).length,
         total: totalTags
       });
     }
   );
 });
 
-var port = process.env.PORT || 3000;
-app.listen(port, function() {
-  console.log("Listening on " + port);
-});
+app.listen(process.env.PORT || 3000);

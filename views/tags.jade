@@ -1,10 +1,16 @@
 extends layout
 
 block content
-  h3 #{total} Total Tags Found
+  h2 #{total} Tags Counted
+  h3 #{unique} Unique Tags Seen
 
-  .row
-    for product, id in products
+  mixin badge(count)
+    span.badge= count
+    |&nbsp;
+    block
+
+  for product, id in products
+    .row
       .span2
         h4
           a(href="https://sprint.ly/product/" + id, target="_blank")= product.name
@@ -12,6 +18,26 @@ block content
         ul.unstyled
           each tag in product.tags
             li
-              span.label= tag[1]
-              |&nbsp;
-              a(href="https://sprint.ly/product/"+id+"/#!/dashboard/#tags="+tag[0])= tag[0]
+              +badge(tag[1])
+                a(href="https://sprint.ly/product/"+id+"/#!/dashboard/@tags="+tag[0])= tag[0]
+
+      .span6
+        h5 Summary of Items
+        mixin capitalize(word)
+          = word.charAt(0).toUpperCase() + word.slice(1)
+        - var statuses = ['someday', 'backlog', 'in-progress', 'complete']
+        table.table.table-hover
+          thead
+            tr
+              th &nbsp;
+              each s in statuses
+                th
+                  +capitalize(s)
+
+          tbody
+            for t in ['defect', 'story', 'task', 'test']
+              tr
+                th
+                  +capitalize(t)
+                each s in statuses
+                  td= product.statuses[s] ? product.statuses[s][t] ? product.statuses[s][t] : 0 : 0
